@@ -9,11 +9,17 @@ internal class BankHttpServer
 {
     private const string TransferPath = "/transfers";
 
+    private const string SuccessMessage = "Transfer successful. Recipient account credited.";
+
     private readonly HttpListener _listener = new();
 
     private readonly Bank _bank;
 
     private readonly ServerConsole _serverConsole;
+
+    // One entry per transfer reference this bank has already applied. A retry
+    // that arrives with the same reference must not credit the account again.
+    private readonly Dictionary<string, string> _processedTransfers = new();
 
     public BankHttpServer(Bank bank, ServerConsole serverConsole, string prefix)
     {
@@ -122,6 +128,26 @@ internal class BankHttpServer
             return;
         }
 
+        // Without a reference there is no way to tell a retry from a new
+        // transfer, so refuse it rather than risk crediting twice.
+        if (string.IsNullOrWhiteSpace(transfer.TransferId))
+        {
+            await Reject(context, "missing transfer reference");
+
+            return;
+        }
+
+        // Already applied under this reference: answer with the original
+        // outcome and credit nothing. This is what makes a retry safe.
+        if (_processedTransfers.TryGetValue(transfer.TransferId, out string? applied))
+        {
+            _serverConsole.DisplayDuplicateTransfer(transfer.TransferId);
+
+            await WriteResponse(context, 200, applied);
+
+            return;
+        }
+
         if (transfer.Amount <= 0)
         {
             await Reject(context, "amount must be greater than zero");
@@ -143,19 +169,16 @@ internal class BankHttpServer
             "Inter-bank transfer received from CrestBank",
             "Transfer In");
 
+        // Record the outcome before answering, so a retry that lands while the
+        // first answer is still in flight sees it as applied.
+        _processedTransfers[transfer.TransferId] = SuccessMessage;
+
         _serverConsole.DisplayIncomingTransfer(
             transfer.AccountNumber,
             transfer.Amount,
             recipient.Balance);
 
-        byte[] buffer = Encoding.UTF8.GetBytes(
-            "Transfer successful. Recipient account credited.");
-
-        context.Response.ContentType = "text/plain; charset=utf-8";
-        context.Response.ContentLength64 = buffer.Length;
-
-        await context.Response.OutputStream.WriteAsync(buffer);
-        context.Response.Close();
+        await WriteResponse(context, 200, SuccessMessage);
     }
 
     private async Task Reject(HttpListenerContext context, string reason)
@@ -171,6 +194,15 @@ internal class BankHttpServer
     {
         _serverConsole.DisplayTransferRejected(reason);
 
+        await WriteResponse(context, statusCode, message);
+    }
+
+    private static async Task WriteResponse(
+        HttpListenerContext context,
+        int statusCode,
+        string message)
+    {
+        // ContentLength64 has to be the BYTE count, not the character count.
         byte[] buffer = Encoding.UTF8.GetBytes(message);
 
         context.Response.StatusCode = statusCode;

@@ -21,4 +21,9 @@ public class ServerConsole
     {
         Console.WriteLine($"[NovaBank] transfer rejected: {reason}");
     }
+
+    public void DisplayDuplicateTransfer(string transferId)
+    {
+        Console.WriteLine($"[NovaBank] duplicate transfer {transferId} replayed - nothing credited");
+    }
 }
