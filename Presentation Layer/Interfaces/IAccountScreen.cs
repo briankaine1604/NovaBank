@@ -2,10 +2,6 @@ using System.Collections.Generic;
 
 namespace NovaBank
 {
-    /// <summary>
-    /// The logged-in customer's screens: their menu, their balance, their statement,
-    /// and the outcomes of the operations that do not cross a bank boundary.
-    /// </summary>
     public interface IAccountScreen
     {
         void DisplayAccountMenu(Account account);

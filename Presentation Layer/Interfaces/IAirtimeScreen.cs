@@ -1,6 +1,5 @@
 namespace NovaBank
 {
-    /// <summary>Airtime and data purchases: network choice failures and receipts.</summary>
     public interface IAirtimeScreen
     {
         void DisplayInvalidNetwork();

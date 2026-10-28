@@ -1,9 +1,5 @@
 namespace NovaBank
 {
-    /// <summary>
-    /// The console the HTTP listener writes to. Kept behind an interface so the
-    /// listener can run without one (and so it never touches Console directly).
-    /// </summary>
     public interface IServerConsole
     {
         void DisplayServerStarted(string address);
