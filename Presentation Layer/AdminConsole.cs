@@ -1,6 +1,6 @@
 namespace NovaBank;
 
-public class AdminConsole
+public class AdminConsole : IAdminConsole
 {
     public void DisplayAdminMenu()
     {

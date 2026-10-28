@@ -1,8 +1,8 @@
-﻿using System.Security.Principal;
+using System.Security.Principal;
 
 namespace NovaBank;
 
-public class ATMConsole
+public class ATMConsole : IATMConsole
 {
     private const decimal MaxAmount = 1_000_000_000m;
 

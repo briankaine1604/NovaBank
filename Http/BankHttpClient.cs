@@ -1,11 +1,11 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 
 namespace NovaBank.Http
 {
-    public class BankHttpClient
+    public class BankHttpClient : IBankHttpClient
     {
         private readonly HttpClient _client;
 

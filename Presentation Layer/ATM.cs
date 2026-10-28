@@ -18,21 +18,21 @@ namespace NovaBank
 
         private readonly Bank _bank;
 
-        private readonly ATMConsole _atmConsole;
+        private readonly IATMConsole _atmConsole;
 
-        private readonly AdminConsole _adminConsole;
+        private readonly IAdminConsole _adminConsole;
 
         private readonly Admin _admin;
 
-        private readonly BankHttpClient _httpClient;
+        private readonly IBankHttpClient _httpClient;
 
 
         public ATM(
             Bank bank,
-            ATMConsole atmConsole,
-            AdminConsole adminConsole,
+            IATMConsole atmConsole,
+            IAdminConsole adminConsole,
             Admin admin,
-            BankHttpClient httpClient)
+            IBankHttpClient httpClient)
         {
             _bank = bank;
             _atmConsole = atmConsole;

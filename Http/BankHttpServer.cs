@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace NovaBank.Http;
 
-internal class BankHttpServer
+internal class BankHttpServer : IBankHttpServer
 {
     private const string TransferPath = "/transfers";
 
@@ -15,7 +15,7 @@ internal class BankHttpServer
 
     private readonly Bank _bank;
 
-    private readonly ServerConsole _serverConsole;
+    private readonly IServerConsole _serverConsole;
 
     private readonly string _sharedSecret;
 
@@ -25,7 +25,7 @@ internal class BankHttpServer
 
     public BankHttpServer(
         Bank bank,
-        ServerConsole serverConsole,
+        IServerConsole serverConsole,
         string prefix,
         string sharedSecret)
     {
