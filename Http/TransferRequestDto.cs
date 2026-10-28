@@ -1,7 +1,7 @@
 ﻿
 namespace NovaBank.Http;
 
-public class TransferRequest
+public class TransferRequestDto
 {
     public string AccountNumber { get; set; } = "";
     public decimal Amount { get; set; }

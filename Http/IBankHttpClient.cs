@@ -6,6 +6,6 @@ namespace NovaBank.Http
     /// </summary>
     public interface IBankHttpClient
     {
-        Task<(bool Success, string Message)> TransferAsync(TransferRequest transfer);
+        Task<(bool Success, string Message)> TransferAsync(TransferRequestDto transfer);
     }
 }

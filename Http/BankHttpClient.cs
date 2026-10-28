@@ -22,7 +22,7 @@ namespace NovaBank.Http
             };
         }
 
-        public async Task<(bool Success, string Message)> TransferAsync(TransferRequest transfer)
+        public async Task<(bool Success, string Message)> TransferAsync(TransferRequestDto transfer)
         {
             string json = JsonSerializer.Serialize(transfer);
 

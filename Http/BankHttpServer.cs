@@ -136,11 +136,11 @@ internal class BankHttpServer : IBankHttpServer
             return;
         }
 
-        TransferRequest? transfer;
+        TransferRequestDto? transfer;
 
         try
         {
-            transfer = JsonSerializer.Deserialize<TransferRequest>(body);
+            transfer = JsonSerializer.Deserialize<TransferRequestDto>(body);
         }
         catch (JsonException ex)
         {
