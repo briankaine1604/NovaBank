@@ -17,14 +17,21 @@ internal class BankHttpServer
 
     private readonly ServerConsole _serverConsole;
 
+    private readonly string _sharedSecret;
+
     // One entry per transfer reference this bank has already applied. A retry
     // that arrives with the same reference must not credit the account again.
     private readonly Dictionary<string, string> _processedTransfers = new();
 
-    public BankHttpServer(Bank bank, ServerConsole serverConsole, string prefix)
+    public BankHttpServer(
+        Bank bank,
+        ServerConsole serverConsole,
+        string prefix,
+        string sharedSecret)
     {
         _bank = bank;
         _serverConsole = serverConsole;
+        _sharedSecret = sharedSecret;
         _listener.Prefixes.Add(prefix);
     }
 
@@ -101,6 +108,33 @@ internal class BankHttpServer
 
         using var reader = new StreamReader(context.Request.InputStream);
         string body = await reader.ReadToEndAsync();
+
+        // Authenticate the raw bytes BEFORE parsing them: nothing in the body is
+        // trusted until the signature over that exact body checks out.
+        string timestamp = context.Request.Headers["X-Bank-Timestamp"] ?? "";
+        string signature = context.Request.Headers["X-Bank-Signature"] ?? "";
+
+        if (!RequestSignature.IsFresh(timestamp))
+        {
+            await Reject(
+                context,
+                401,
+                "Unauthorized.",
+                $"missing, malformed or stale timestamp '{timestamp}'");
+
+            return;
+        }
+
+        if (!RequestSignature.Verify(_sharedSecret, timestamp, body, signature))
+        {
+            await Reject(
+                context,
+                401,
+                "Unauthorized.",
+                "signature did not match the body or the shared secret");
+
+            return;
+        }
 
         TransferRequest? transfer;
 
