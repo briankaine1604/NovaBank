@@ -10,7 +10,7 @@ public class ATMConsole
     {
         Console.WriteLine();
         Console.WriteLine(new string('=', 60));
-        Console.WriteLine("                P I G G Y   B A N K   A T M");
+        Console.WriteLine("                N O V A   B A N K   A T M");
         Console.WriteLine(new string('=', 60));
         Console.WriteLine("1. Create account");
         Console.WriteLine("2. Customer login");
