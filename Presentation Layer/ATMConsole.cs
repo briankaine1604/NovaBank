@@ -2,7 +2,19 @@ using System.Security.Principal;
 
 namespace NovaBank;
 
-public class ATMConsole : IATMConsole
+/// <summary>
+/// The console implementation behind every screen interface. One class, because the
+/// terminal is one surface - but callers only ever see the slice they use, so the
+/// transfer service cannot reach the airtime prompts and vice versa.
+/// </summary>
+public class ATMConsole :
+    IInputReader,
+    IMenuScreen,
+    IAccountScreen,
+    ITransferScreen,
+    IAirtimeScreen,
+    IAccountOpeningScreen,
+    ICommonOutcomes
 {
     private const decimal MaxAmount = 1_000_000_000m;
 
@@ -270,7 +282,7 @@ public class ATMConsole : IATMConsole
         Console.WriteLine("Invalid option.");
     }
 
-    public void OnAccountCreatedSuccess(Account account)
+    public void DisplayAccountCreated(Account account)
     {
         Console.WriteLine("\nAccount created successfully!");
         Console.WriteLine($"Account number: {account.AccountNumber}");

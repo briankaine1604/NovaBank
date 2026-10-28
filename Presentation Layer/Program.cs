@@ -24,10 +24,27 @@ services.AddSingleton(_ =>
 
 services.AddSingleton(_ => new Admin("admin", "password"));
 
-// Screens behind interfaces: the ATM never names a concrete console.
-services.AddSingleton<IATMConsole, ATMConsole>();
+// Screens behind interfaces: nothing in the app names a concrete console.
+// ATMConsole is ONE object registered under each role it plays, so every service
+// gets the narrow slice it asked for instead of the whole 32-method surface.
+services.AddSingleton<ATMConsole>();
+services.AddSingleton<IInputReader>(p => p.GetRequiredService<ATMConsole>());
+services.AddSingleton<IMenuScreen>(p => p.GetRequiredService<ATMConsole>());
+services.AddSingleton<IAccountScreen>(p => p.GetRequiredService<ATMConsole>());
+services.AddSingleton<ITransferScreen>(p => p.GetRequiredService<ATMConsole>());
+services.AddSingleton<IAirtimeScreen>(p => p.GetRequiredService<ATMConsole>());
+services.AddSingleton<IAccountOpeningScreen>(p => p.GetRequiredService<ATMConsole>());
+services.AddSingleton<ICommonOutcomes>(p => p.GetRequiredService<ATMConsole>());
+
 services.AddSingleton<IAdminConsole, AdminConsole>();
 services.AddSingleton<IServerConsole, ServerConsole>();
+
+// Use cases, one per job the menus can start.
+services.AddSingleton<AccountOpeningService>();
+services.AddSingleton<AccountService>();
+services.AddSingleton<TransferService>();
+services.AddSingleton<AirtimeService>();
+services.AddSingleton<AdminService>();
 
 // Transport. Addresses and the shared secret are wired in one place.
 services.AddSingleton<IBankHttpClient>(
