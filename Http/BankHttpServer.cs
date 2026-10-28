@@ -138,12 +138,24 @@ internal class BankHttpServer
         }
 
         // Already applied under this reference: answer with the original
-        // outcome and credit nothing. This is what makes a retry safe.
+        // outcome and credit nothing. This is what makes a retry safe, and it is
+        // checked first so a retry resolves on its reference alone.
         if (_processedTransfers.TryGetValue(transfer.TransferId, out string? applied))
         {
             _serverConsole.DisplayDuplicateTransfer(transfer.TransferId);
 
             await WriteResponse(context, 200, applied);
+
+            return;
+        }
+
+        // The statement line is built from these, so a transfer with no sender
+        // is refused rather than credited as "unknown".
+        if (string.IsNullOrWhiteSpace(transfer.SenderName)
+            || string.IsNullOrWhiteSpace(transfer.SenderAccountNumber)
+            || string.IsNullOrWhiteSpace(transfer.SenderBank))
+        {
+            await Reject(context, "missing sender details");
 
             return;
         }
@@ -166,7 +178,8 @@ internal class BankHttpServer
 
         recipient.Credit(
             transfer.Amount,
-            "Inter-bank transfer received from CrestBank",
+            $"Inter-bank transfer from {transfer.SenderName} " +
+            $"{transfer.SenderAccountNumber} ({transfer.SenderBank})",
             "Transfer In");
 
         // Record the outcome before answering, so a retry that lands while the
@@ -174,6 +187,9 @@ internal class BankHttpServer
         _processedTransfers[transfer.TransferId] = SuccessMessage;
 
         _serverConsole.DisplayIncomingTransfer(
+            transfer.SenderName,
+            transfer.SenderAccountNumber,
+            transfer.SenderBank,
             transfer.AccountNumber,
             transfer.Amount,
             recipient.Balance);

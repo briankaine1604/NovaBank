@@ -12,6 +12,10 @@ namespace NovaBank
         // Accounts starting with this prefix belong to CrestBank, not to this bank.
         private const string CrestBankPrefix = "303";
 
+        // This bank's own name, sent with every transfer so the receiving bank can
+        // write a real counterparty line instead of guessing who called it.
+        private const string BankName = "NovaBank";
+
         private readonly Bank _bank;
 
         private readonly ATMConsole _atmConsole;
@@ -247,14 +251,22 @@ namespace NovaBank
                 return;
             }
 
-            // A reference generated BEFORE the request lets the other bank
-            // recognise a retry of the same transfer instead of applying it twice.
-            string transferId = Guid.NewGuid().ToString("N");
+            // Everything the other bank needs to show this transfer on its own
+            // statement is built once, before the debit, and reused on the retry:
+            // same reference, same sender, same amount.
+            TransferRequest request = new()
+            {
+                AccountNumber = recipientAccountNumber,
+                Amount = amount,
+                TransferId = Guid.NewGuid().ToString("N"),
+                SenderName = sender.AccountHolder.Name,
+                SenderAccountNumber = sender.AccountNumber,
+                SenderBank = BankName
+            };
 
             // Blocking on purpose: the console menu has to stay in step with the
             // request, and there is no UI thread here to deadlock on.
-            (bool success, string message) =
-                SendWithRetry(recipientAccountNumber, amount, transferId);
+            (bool success, string message) = SendWithRetry(request);
 
             if (success)
             {
@@ -272,13 +284,10 @@ namespace NovaBank
             _atmConsole.DisplayInterBankTransferFailed(message);
         }
 
-        private (bool Success, string Message) SendWithRetry(
-            string recipientAccountNumber,
-            decimal amount,
-            string transferId)
+        private (bool Success, string Message) SendWithRetry(TransferRequest request)
         {
             (bool success, string message) = _httpClient
-                .TransferAsync(recipientAccountNumber, amount, transferId)
+                .TransferAsync(request)
                 .GetAwaiter().GetResult();
 
             if (success)
@@ -286,12 +295,12 @@ namespace NovaBank
                 return (true, message);
             }
 
-            // Retry ONCE with the same reference. If the first attempt reached the
-            // other bank and only the answer was lost, this one is recognised as a
-            // duplicate and returns the original outcome instead of crediting twice.
+            // Retry ONCE with the SAME request object. If the first attempt reached
+            // the other bank and only the answer was lost, this one is recognised as
+            // a duplicate and returns the original outcome instead of crediting twice.
             // That is what lets the caller report success instead of reversing.
             (success, message) = _httpClient
-                .TransferAsync(recipientAccountNumber, amount, transferId)
+                .TransferAsync(request)
                 .GetAwaiter().GetResult();
 
             return (success, message);

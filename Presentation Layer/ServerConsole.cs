@@ -12,9 +12,17 @@ public class ServerConsole
         Console.WriteLine($"[NovaBank] could not start the HTTP server: {message} (error {errorCode})");
     }
 
-    public void DisplayIncomingTransfer(string accountNumber, decimal amount, decimal newBalance)
+    public void DisplayIncomingTransfer(
+        string senderName,
+        string senderAccountNumber,
+        string senderBank,
+        string accountNumber,
+        decimal amount,
+        decimal newBalance)
     {
-        Console.WriteLine($"[NovaBank] credited {amount:N2} to {accountNumber} (balance now {newBalance:N2})");
+        Console.WriteLine(
+            $"[NovaBank] credited {amount:N2} to {accountNumber} " +
+            $"from {senderName} {senderAccountNumber} ({senderBank}) - balance now {newBalance:N2}");
     }
 
     public void DisplayTransferRejected(string reason)

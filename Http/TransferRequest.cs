@@ -1,7 +1,7 @@
 ﻿
 namespace NovaBank.Http;
 
-internal class TransferRequest
+public class TransferRequest
 {
     public string AccountNumber { get; set; } = "";
     public decimal Amount { get; set; }
@@ -10,4 +10,12 @@ internal class TransferRequest
     // reference on a retry means "this is the same transfer, do not apply it
     // twice" - which is what makes retrying after a lost answer safe.
     public string TransferId { get; set; } = "";
+
+    // Who sent it. The receiving bank shows these on its own statement, so the
+    // counterparty description stops being a hardcoded guess about the peer.
+    public string SenderName { get; set; } = "";
+
+    public string SenderAccountNumber { get; set; } = "";
+
+    public string SenderBank { get; set; } = "";
 }

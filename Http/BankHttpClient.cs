@@ -17,18 +17,8 @@ namespace NovaBank.Http
             };
         }
 
-        public async Task<(bool Success, string Message)> TransferAsync(
-            string accountNumber,
-            decimal amount,
-            string transferId)
+        public async Task<(bool Success, string Message)> TransferAsync(TransferRequest transfer)
         {
-            var transfer = new TransferRequest
-            {
-                AccountNumber = accountNumber,
-                Amount = amount,
-                TransferId = transferId
-            };
-
             string json = JsonSerializer.Serialize(transfer);
 
             using var content = new StringContent(
