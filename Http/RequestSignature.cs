@@ -13,7 +13,7 @@ internal static class RequestSignature
 {
     // A signed request older (or newer) than this is refused. It bounds how long
     // a captured request stays useful to someone replaying it.
-    private static readonly TimeSpan MaxSkew = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan MaxTime = TimeSpan.FromMinutes(5);
 
     public static string Sign(string secret, string timestamp, string body)
     {
@@ -51,6 +51,6 @@ internal static class RequestSignature
 
         DateTimeOffset sent = DateTimeOffset.FromUnixTimeSeconds(seconds);
 
-        return (DateTimeOffset.UtcNow - sent).Duration() <= MaxSkew;
+        return (DateTimeOffset.UtcNow - sent).Duration() <= MaxTime;
     }
 }
