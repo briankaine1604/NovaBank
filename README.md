@@ -55,6 +55,15 @@ Killing the NovaBank window instead of choosing Exit can leave CrestBank
 running; it holds port 5002 and the next start will report the port is taken.
 Stop it with `taskkill /F /IM CrestBank.exe`.
 
+## Server output
+
+The HTTP server runs in the same process as the ATM, on a background thread. Its
+events - an incoming transfer, a rejected request, a replayed transfer - go to
+`bank.log` in the working directory, never to the ATM screen, because the screen
+belongs to whoever is logged in. The startup lines (address, log path, or a
+listener failure) still print on the console: they happen before any session
+exists, and a listener that did not start must be loud.
+
 ## Inter-bank contract
 
 NovaBank is one half of a two-bank system. Its peer, CrestBank, lives in its own
