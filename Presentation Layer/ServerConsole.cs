@@ -44,4 +44,14 @@ public class ServerConsole : IServerConsole
     {
         File.AppendAllText(_logPath, $"{DateTime.Now:HH:mm:ss} {line}{Environment.NewLine}");
     }
+
+    public IReadOnlyList<string> RecentLines(int count)
+    {
+        if (!File.Exists(_logPath))
+        {
+            return Array.Empty<string>();
+        }
+
+        return File.ReadAllLines(_logPath).TakeLast(count).ToList();
+    }
 }

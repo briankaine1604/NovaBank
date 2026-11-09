@@ -16,18 +16,22 @@ namespace NovaBank
 
         private readonly IMenuScreen _menu;
 
+        private readonly IServerConsole _serverConsole;
+
         public AdminService(
             Bank bank,
             Admin admin,
             IAdminConsole adminConsole,
             IInputReader input,
-            IMenuScreen menu)
+            IMenuScreen menu,
+            IServerConsole serverConsole)
         {
             _bank = bank;
             _admin = admin;
             _adminConsole = adminConsole;
             _input = input;
             _menu = menu;
+            _serverConsole = serverConsole;
         }
 
         public void AdminLogin()
@@ -76,11 +80,20 @@ namespace NovaBank
                         _menu.DisplayLogout();
                         break;
 
+                    case "5":
+                        ViewServerActivity();
+                        break;
+
                     default:
                         _menu.DisplayInvalidOption();
                         break;
                 }
             }
+        }
+
+        private void ViewServerActivity()
+        {
+            _adminConsole.DisplayServerActivity(_serverConsole.RecentLines(10));
         }
 
         private void ViewAllAccounts()

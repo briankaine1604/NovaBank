@@ -9,6 +9,7 @@ public class AdminConsole : IAdminConsole
         Console.WriteLine("2. Find an account");
         Console.WriteLine("3. Manage an account");
         Console.WriteLine("4. Logout");
+        Console.WriteLine("5. Server activity");
         Console.Write("Choose an option: ");
     }
 
@@ -121,6 +122,23 @@ public class AdminConsole : IAdminConsole
 
         Console.WriteLine("2. Back");
         Console.Write("Choose an option: ");
+    }
+
+    public void DisplayServerActivity(IReadOnlyList<string> lines)
+    {
+        Console.WriteLine();
+        Console.WriteLine("=== SERVER ACTIVITY (last 10) ===");
+
+        if (lines.Count == 0)
+        {
+            Console.WriteLine("Nothing has been logged yet.");
+            return;
+        }
+
+        foreach (string line in lines)
+        {
+            Console.WriteLine(line);
+        }
     }
 
     public void DisplayFreezeSuccess()

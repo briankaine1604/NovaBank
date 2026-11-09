@@ -64,6 +64,10 @@ belongs to whoever is logged in. The startup lines (address, log path, or a
 listener failure) still print on the console: they happen before any session
 exists, and a listener that did not start must be loud.
 
+An admin can read it from inside the app: Admin login > 5. Server activity shows
+the last ten lines. It is a pull, not a push - nothing prints while you are
+typing, so the prompt and the record never collide.
+
 ## Inter-bank contract
 
 NovaBank is one half of a two-bank system. Its peer, CrestBank, lives in its own

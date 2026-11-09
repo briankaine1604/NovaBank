@@ -17,5 +17,7 @@ namespace NovaBank
         void DisplayManageAccountMenu(Account account);
         void DisplayFreezeSuccess();
         void DisplayUnfreezeSuccess();
+
+        void DisplayServerActivity(IReadOnlyList<string> lines);
     }
 }
