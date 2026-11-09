@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Net.Sockets;
 
 namespace NovaBank.Configuration;
 
@@ -16,7 +15,7 @@ public sealed class PeerLauncher : IDisposable
 
     public void Start()
     {
-        if (IsListening(_config.PeerAddress))
+        if (Process.GetProcessesByName(_config.PeerName).Length > 0)
         {
             Console.WriteLine($"[{_config.Name}] {_config.PeerName} is already running.");
 
@@ -27,13 +26,12 @@ public sealed class PeerLauncher : IDisposable
 
         if (!File.Exists(project))
         {
-            Console.WriteLine(
-                $"[{_config.Name}] no peer project at {project}; start it yourself.");
+            Console.WriteLine($"[{_config.Name}] no peer project at {project}");
 
             return;
         }
 
-        // "--" separates dotnet's arguments from ours; UseShellExecute gives the peer its own console window.
+        // dotnet run builds the peer first; everything after "--" is passed to it.
         _started = Process.Start(new ProcessStartInfo("dotnet",
             $"run --project \"{project}\" -- " +
             $"--own {_config.PeerAddress} --peer {_config.Address} --secret {_config.Secret}")
@@ -42,16 +40,7 @@ public sealed class PeerLauncher : IDisposable
             UseShellExecute = true
         });
 
-        Console.WriteLine($"[{_config.Name}] starting {_config.PeerName} at {_config.PeerAddress} ...");
-
-        for (int attempt = 0; attempt < 120 && !IsListening(_config.PeerAddress); attempt++)
-        {
-            Thread.Sleep(250);
-        }
-
-        Console.WriteLine(IsListening(_config.PeerAddress)
-            ? $"[{_config.Name}] {_config.PeerName} is up."
-            : $"[{_config.Name}] {_config.PeerName} is not answering yet.");
+        Console.WriteLine($"[{_config.Name}] starting {_config.PeerName} at {_config.PeerAddress}.");
     }
 
     public void Dispose()
@@ -60,23 +49,6 @@ public sealed class PeerLauncher : IDisposable
         if (_started is { HasExited: false })
         {
             _started.Kill(entireProcessTree: true);
-        }
-    }
-
-    private static bool IsListening(string address)
-    {
-        Uri uri = new(address);
-
-        try
-        {
-            using var client = new TcpClient();
-
-            return client.ConnectAsync(uri.Host, uri.Port).Wait(TimeSpan.FromMilliseconds(400))
-                && client.Connected;
-        }
-        catch (Exception)
-        {
-            return false;
         }
     }
 }

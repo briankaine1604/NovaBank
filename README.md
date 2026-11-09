@@ -42,9 +42,11 @@ it is found however the app is started.
 
 On startup NovaBank reads the file, starts the peer with
 `dotnet run --project <peerProjectPath> -- --own <peerAddress>
---peer <address> --secret <secret>`, waits for the peer's port, then serves its
-own ATM. If the peer is already listening it is left alone - and it is only
-killed on exit when this process started it.
+--peer <address> --secret <secret>`, then serves its own ATM. If CrestBank is
+already running it is left alone - and it is only killed on exit when this
+process started it. It does not wait for the peer to be ready, so a transfer
+made in the first few seconds can find CrestBank still building; the debit is
+reversed and the ATM says so.
 
 Two things are deliberately *not* settings: the account prefix (`000`, baked
 into every number the seeder and `Bank` issue) and the ATM's admin credentials.
