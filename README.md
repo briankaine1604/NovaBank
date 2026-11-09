@@ -72,6 +72,22 @@ An admin can read it from inside the app: Admin login > 5. Server activity shows
 the last ten lines. It is a pull, not a push - nothing prints while you are
 typing, so the prompt and the record never collide.
 
+## Endpoints
+
+Three, all `POST`, all signed with the shared secret (`X-Bank-Timestamp` and
+`X-Bank-Signature`, HMAC-SHA256 over `timestamp + "\n" + body`):
+
+| Path        | Body                                                              | What it does                                   |
+| ----------- | ----------------------------------------------------------------- | ---------------------------------------------- |
+| `/transfers`| AccountNumber, Amount, TransferId, SenderName, SenderAccountNumber, SenderBank | Credits one of this bank's accounts (idempotent by TransferId) |
+| `/airtime`  | Product, Phone, Network, Amount, CustomerAccount, Plan            | Sells airtime; returns a reference              |
+| `/data`     | same as `/airtime`, with Plan set to one of the data plans        | Sells a data bundle; checks the price matches    |
+
+NovaBank holds the telco relationship, so it fulfils airtime and data for its own
+ATM **and** for the peer bank. It never touches a customer's money: the caller has
+already debited its own customer, and reverses if the sale is refused. Every sale
+is written to `bank.log` with a reference such as `AIR-BFA083`.
+
 ## Inter-bank contract
 
 NovaBank is one half of a two-bank system. Its peer, CrestBank, lives in its own

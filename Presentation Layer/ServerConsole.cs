@@ -39,6 +39,17 @@ public class ServerConsole : IServerConsole
         Write($"duplicate transfer {transferId} replayed - nothing credited");
     }
 
+    public void DisplayAirtimeSale(
+        string product,
+        string phone,
+        string network,
+        decimal amount,
+        string customerAccount,
+        string result)
+    {
+        Write($"{product} {amount:N2} for {phone} ({network}) to {customerAccount} - {result}");
+    }
+
     private void Write(string line)
     {
         File.AppendAllText(_logPath, $"{DateTime.Now:HH:mm:ss} {line}{Environment.NewLine}");

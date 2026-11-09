@@ -18,6 +18,14 @@ namespace NovaBank
 
         void DisplayDuplicateTransfer(string transferId);
 
+        void DisplayAirtimeSale(
+            string product,
+            string phone,
+            string network,
+            decimal amount,
+            string customerAccount,
+            string result);
+
         IReadOnlyList<string> RecentLines(int count);
     }
 }

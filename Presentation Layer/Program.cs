@@ -41,6 +41,7 @@ services.AddSingleton<AccountOpeningService>();
 services.AddSingleton<AccountService>();
 services.AddSingleton<TransferService>();
 services.AddSingleton<AirtimeService>();
+services.AddSingleton<AirtimeProvider>();
 services.AddSingleton<AdminService>();
 
 services.AddSingleton<IBankHttpClient>(
@@ -70,7 +71,8 @@ services.AddSingleton<IBankHttpServer>(
         provider.GetRequiredService<Bank>(),
         provider.GetRequiredService<IServerConsole>(),
         config.Address,
-        config.Secret));
+        config.Secret,
+        provider.GetRequiredService<AirtimeProvider>()));
 
 services.AddSingleton<ATM>();
 
