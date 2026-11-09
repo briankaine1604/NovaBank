@@ -2,7 +2,7 @@ namespace NovaBank
 {
     /// <summary>
     /// Opening an account: ask for the details, then hand them to the domain.
-    /// Knows nothing about menus or balances - only the opening prompts and receipt.
+    /// Knows nothing about menus or balances.
     /// </summary>
     public class AccountOpeningService
     {
@@ -32,7 +32,6 @@ namespace NovaBank
             decimal deposit;
             while (!_input.TryReadAmount("How much do you want to deposit?: ", out deposit))
             {
-                // keep asking until the amount passes validation
             }
 
             Account account = _bank.CreateAccount(name, city, pin, deposit);

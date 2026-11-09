@@ -3,9 +3,8 @@ using System.Security.Principal;
 namespace NovaBank;
 
 /// <summary>
-/// The console implementation behind every screen interface. One class, because the
-/// terminal is one surface - but callers only ever see the slice they use, so the
-/// transfer service cannot reach the airtime prompts and vice versa.
+/// The console behind every screen interface. One class, since the terminal is one
+/// surface, but callers only see the slice they use.
 /// </summary>
 public class ATMConsole :
     IInputReader,

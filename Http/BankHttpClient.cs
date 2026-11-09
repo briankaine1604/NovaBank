@@ -26,8 +26,7 @@ namespace NovaBank.Http
         {
             string json = JsonSerializer.Serialize(transfer);
 
-            // Signed per attempt with a fresh timestamp, so the retry carries a new
-            // valid signature over the same body instead of a stale replay.
+            // Signed per attempt, so the retry carries a fresh signature over the same body.
             string timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
 
             using var content = new StringContent(
@@ -51,8 +50,7 @@ namespace NovaBank.Http
 
                 string message = await response.Content.ReadAsStringAsync();
 
-                // 401 is a credentials problem, not a transfer problem: say so
-                // instead of passing the bare word "Unauthorized." to the customer.
+                // 401 is a credentials problem, not a transfer problem: say so plainly.
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     return (false, "Recipient bank rejected the request signature.");

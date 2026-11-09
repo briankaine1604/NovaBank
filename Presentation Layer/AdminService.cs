@@ -1,9 +1,8 @@
 namespace NovaBank
 {
     /// <summary>
-    /// The staff side: log in, list accounts, look one up, freeze or unfreeze it.
-    /// Split from the customer flows because it reads the whole bank, not one
-    /// customer's account.
+    /// The staff side: log in, list accounts, look one up, freeze or unfreeze.
+    /// Split from customer flows because it reads the whole bank.
     /// </summary>
     public class AdminService
     {

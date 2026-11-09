@@ -1,9 +1,8 @@
 ﻿namespace NovaBank
 {
     /// <summary>
-    /// The shell. Its only jobs are: show the right menu, read the choice, and hand
-    /// the work to the service that owns it. It holds no rules, no formatting and no
-    /// transfer logic - each service talks to the screen interfaces it needs.
+    /// The shell: show a menu, read the choice, hand the work to the service that owns it.
+    /// No rules, no formatting, no transfer logic - services talk to screen interfaces.
     /// </summary>
     public class ATM
     {
@@ -95,8 +94,7 @@
                 return;
             }
 
-            // A frozen account can still log in: AccountMenu blocks the
-            // operations that move money and leaves balance/history available.
+            // A frozen account can still log in; AccountMenu blocks the money-moving operations.
             if (account.IsFrozen)
             {
                 _accountScreen.DisplayAccountFrozen();
@@ -167,8 +165,7 @@
             }
         }
 
-        /// Money-moving operations are blocked on a frozen account; balance and
-        /// transaction history stay available.
+        /// Money-moving operations are blocked on a frozen account; balance and history stay available.
         private bool IsBlockedByFreeze(Account account)
         {
             if (!account.IsFrozen)

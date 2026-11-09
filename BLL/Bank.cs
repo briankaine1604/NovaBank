@@ -17,11 +17,6 @@ public class Bank
        //     throw new InvalidOperationException("Account Number already exists");
        // }
 
-       // _accounts.Add(account.AccountNumber, account);
-
-    //My method above changed it cause its 2 diff operations which is more time and more work
-
-
         if (!_accounts.TryAdd(account.AccountNumber, account))
         {
             throw new InvalidOperationException("Account number already exists.");
@@ -76,7 +71,6 @@ public class Bank
     {
         if (amount <= 0)
         {
-            //Console.WriteLine("Amount must be greater than zero");
             return TransferResult.AmountInvalid;
         }
 
@@ -87,7 +81,6 @@ public class Bank
         var recipient = GetAccount(recipientAccountNumber);
         if (recipient == null)
         {
-            //Console.WriteLine("Account does not exist");
             return TransferResult.RecipientInvalid;
         }
        
@@ -95,7 +88,6 @@ public class Bank
 
         if (success == false)
         {
-            //Console.WriteLine("Insufficient Funds");
             return TransferResult.InsufficientFunds;
         } 
         recipient.Credit(amount, $"Transfer from {sender.AccountHolder.Name} {sender.AccountNumber} (NovaBank)", "Transfer In");

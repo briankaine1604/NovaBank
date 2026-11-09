@@ -19,8 +19,7 @@ internal class BankHttpServer : IBankHttpServer
 
     private readonly string _sharedSecret;
 
-    // One entry per transfer reference this bank has already applied. A retry
-    // that arrives with the same reference must not credit the account again.
+    // References already applied. A retry under the same reference must not credit again.
     private readonly Dictionary<string, string> _processedTransfers = new();
 
     public BankHttpServer(
@@ -80,8 +79,7 @@ internal class BankHttpServer : IBankHttpServer
 
     private async Task HandleTransfer(HttpListenerContext context)
     {
-        // Only POST /transfers is a transfer; everything else is refused before
-        // the body is read, so no other request can move money.
+        // Only POST /transfers moves money; everything else is refused before the body is read.
         if (context.Request.HttpMethod != "POST")
         {
             context.Response.AddHeader("Allow", "POST");
@@ -109,8 +107,7 @@ internal class BankHttpServer : IBankHttpServer
         using var reader = new StreamReader(context.Request.InputStream);
         string body = await reader.ReadToEndAsync();
 
-        // Authenticate the raw bytes BEFORE parsing them: nothing in the body is
-        // trusted until the signature over that exact body checks out.
+        // Authenticate the RAW BYTES before parsing: nothing in the body is trusted yet.
         string timestamp = context.Request.Headers["X-Bank-Timestamp"] ?? "";
         string signature = context.Request.Headers["X-Bank-Signature"] ?? "";
 
@@ -144,8 +141,7 @@ internal class BankHttpServer : IBankHttpServer
         }
         catch (JsonException ex)
         {
-            // Malformed, empty or wrongly-typed body: answer the caller instead
-            // of letting the exception escape and leave it waiting.
+            // Malformed or empty body: answer the caller instead of leaving it waiting.
             await Reject(
                 context,
                 400,
@@ -162,8 +158,7 @@ internal class BankHttpServer : IBankHttpServer
             return;
         }
 
-        // Without a reference there is no way to tell a retry from a new
-        // transfer, so refuse it rather than risk crediting twice.
+        // No reference means a retry cannot be told from a new transfer: refuse it.
         if (string.IsNullOrWhiteSpace(transfer.TransferId))
         {
             await Reject(context, "missing transfer reference");
@@ -171,9 +166,7 @@ internal class BankHttpServer : IBankHttpServer
             return;
         }
 
-        // Already applied under this reference: answer with the original
-        // outcome and credit nothing. This is what makes a retry safe, and it is
-        // checked first so a retry resolves on its reference alone.
+        // Already applied: return the original outcome and credit nothing.
         if (_processedTransfers.TryGetValue(transfer.TransferId, out string? applied))
         {
             _serverConsole.DisplayDuplicateTransfer(transfer.TransferId);
@@ -183,8 +176,7 @@ internal class BankHttpServer : IBankHttpServer
             return;
         }
 
-        // The statement line is built from these, so a transfer with no sender
-        // is refused rather than credited as "unknown".
+        // The statement line needs these, so a transfer with no sender is refused.
         if (string.IsNullOrWhiteSpace(transfer.SenderName)
             || string.IsNullOrWhiteSpace(transfer.SenderAccountNumber)
             || string.IsNullOrWhiteSpace(transfer.SenderBank))
@@ -216,8 +208,7 @@ internal class BankHttpServer : IBankHttpServer
             $"{transfer.SenderAccountNumber} ({transfer.SenderBank})",
             "Transfer In");
 
-        // Record the outcome before answering, so a retry that lands while the
-        // first answer is still in flight sees it as applied.
+        // Record the outcome BEFORE answering, so a concurrent retry sees it as applied.
         _processedTransfers[transfer.TransferId] = SuccessMessage;
 
         _serverConsole.DisplayIncomingTransfer(

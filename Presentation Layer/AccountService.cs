@@ -1,9 +1,8 @@
 namespace NovaBank
 {
     /// <summary>
-    /// The operations that stay inside this bank: balance, deposit, withdrawal and
-    /// the statement. No network, so every one of these completes or refuses on the
-    /// spot.
+    /// Operations that stay inside this bank: balance, deposit, withdrawal, statement.
+    /// No network, so each one completes or refuses on the spot.
     /// </summary>
     public class AccountService
     {
