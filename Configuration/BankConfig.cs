@@ -2,10 +2,6 @@ using System.Text.Json;
 
 namespace NovaBank.Configuration;
 
-/// <summary>
-/// What bank.config.json holds: this bank's name and address, the secret both
-/// banks sign with, and where the peer's project lives.
-/// </summary>
 public sealed class BankConfig
 {
     public string Name { get; set; } = "NovaBank";
@@ -18,13 +14,8 @@ public sealed class BankConfig
 
     public string PeerAddress { get; set; } = "http://localhost:5002/";
 
-    /// <summary>The peer's .csproj, relative to the repository root.</summary>
     public string PeerProjectPath { get; set; } = "";
 
-    /// <summary>
-    /// Read from beside the executable - the csproj copies it there - so this is
-    /// the one path that is right however the app was started.
-    /// </summary>
     public static BankConfig Load()
     {
         string path = Path.Combine(AppContext.BaseDirectory, "bank.config.json");
@@ -41,10 +32,6 @@ public sealed class BankConfig
             ?? throw new InvalidDataException($"{path} is empty.");
     }
 
-    /// <summary>
-    /// The app runs from bin/Debug/net10.0, so a repo-relative path only resolves
-    /// after climbing a few levels. Climb until the peer's project turns up.
-    /// </summary>
     public string ResolvePeerProject()
     {
         if (Path.IsPathRooted(PeerProjectPath))

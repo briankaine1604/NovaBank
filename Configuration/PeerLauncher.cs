@@ -3,10 +3,6 @@ using System.Net.Sockets;
 
 namespace NovaBank.Configuration;
 
-/// <summary>
-/// Starts the peer bank next to this one, and stops it again on the way out.
-/// Only a process this class started is ever killed.
-/// </summary>
 public sealed class PeerLauncher : IDisposable
 {
     private readonly BankConfig _config;
@@ -37,9 +33,7 @@ public sealed class PeerLauncher : IDisposable
             return;
         }
 
-        // dotnet run builds the peer if it is stale, then starts it. The -- separates
-        // dotnet's arguments from ours. UseShellExecute gives it its own console
-        // window, so both ATMs stay usable.
+        // "--" separates dotnet's arguments from ours; UseShellExecute gives the peer its own console window.
         _started = Process.Start(new ProcessStartInfo("dotnet",
             $"run --project \"{project}\" -- " +
             $"--own {_config.PeerAddress} --peer {_config.Address} --secret {_config.Secret}")
@@ -50,7 +44,6 @@ public sealed class PeerLauncher : IDisposable
 
         Console.WriteLine($"[{_config.Name}] starting {_config.PeerName} at {_config.PeerAddress} ...");
 
-        // dotnet may need a few seconds to build it before the port answers.
         for (int attempt = 0; attempt < 120 && !IsListening(_config.PeerAddress); attempt++)
         {
             Thread.Sleep(250);
