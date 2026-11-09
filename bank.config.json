@@ -1,7 +1,7 @@
 {
   "name": "NovaBank",
   "address": "http://localhost:5001/",
-  "secret": "nova-crest-demo-secret",
+  "secret": "shared-secret-5059",
   "peerName": "CrestBank",
   "peerAddress": "http://localhost:5002/",
   "peerProjectPath": "..\\CrestBank\\CrestBank.csproj"
