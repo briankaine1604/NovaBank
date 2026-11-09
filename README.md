@@ -60,9 +60,13 @@ Stop it with `taskkill /F /IM CrestBank.exe`.
 The HTTP server runs in the same process as the ATM, on a background thread. Its
 events - an incoming transfer, a rejected request, a replayed transfer - go to
 `bank.log` in the working directory, never to the ATM screen, because the screen
-belongs to whoever is logged in. The startup lines (address, log path, or a
-listener failure) still print on the console: they happen before any session
-exists, and a listener that did not start must be loud.
+belongs to whoever is logged in. Only the listener's own startup line - its
+address, or a failure to bind - still prints, because that happens before any
+session exists and a listener that did not start must be loud.
+
+The log lives in the folder the bank was started from: the repository folder
+under `dotnet run`, the project folder under Visual Studio's F5. Nothing else
+writes to it, and it is git-ignored.
 
 An admin can read it from inside the app: Admin login > 5. Server activity shows
 the last ten lines. It is a pull, not a push - nothing prints while you are

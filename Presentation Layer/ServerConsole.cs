@@ -9,7 +9,6 @@ public class ServerConsole : IServerConsole
     public void DisplayServerStarted(string address)
     {
         Console.WriteLine($"[NovaBank] HTTP server listening on {address}");
-        Console.WriteLine($"[NovaBank] server log: {_logPath}");
     }
 
     public void DisplayServerStartFailed(string message, int errorCode)
