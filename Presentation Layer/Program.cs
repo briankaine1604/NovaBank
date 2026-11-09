@@ -5,13 +5,11 @@ using NovaBank.Http;
 
 // NovaBank is Bank A and the entry point of the pair. bank.config.json holds every
 // address and the shared secret, and names the project to start alongside this one.
-BankConfig config = BankConfig.Load(out string configPath);
+BankConfig config = BankConfig.Load();
 
-Console.Title = $"{config.Own.Name} ATM  (Bank A)";
+Console.Title = $"{config.Name} ATM  (Bank A)";
 
-Console.WriteLine($"[{config.Own.Name}] config: {configPath}");
-
-var peerLauncher = new PeerLauncher(config, configPath);
+var peerLauncher = new PeerLauncher(config);
 
 peerLauncher.Start();
 
@@ -51,7 +49,7 @@ services.AddSingleton<AirtimeService>();
 services.AddSingleton<AdminService>();
 
 services.AddSingleton<IBankHttpClient>(
-    _ => new BankHttpClient(config.Peer.Address, config.Own.InterBankSecret));
+    _ => new BankHttpClient(config.PeerAddress, config.Secret));
 
 // Which account numbers this bank owns. Everything else is routed to the peer over HTTP.
 // Not in the config: the prefix is baked into every account number this bank issues
@@ -72,15 +70,15 @@ services.AddSingleton<ITransferRoute>(provider => new InterBankTransferRoute(
     provider.GetRequiredService<LocalAccountNumbers>(),
     provider.GetRequiredService<ITransferScreen>(),
     provider.GetRequiredService<ICommonOutcomes>(),
-    config.Own.Name,
-    config.Peer.Name));
+    config.Name,
+    config.PeerName));
 
 services.AddSingleton<IBankHttpServer>(
     provider => new BankHttpServer(
         provider.GetRequiredService<Bank>(),
         provider.GetRequiredService<IServerConsole>(),
-        config.Own.Address,
-        config.Own.InterBankSecret));
+        config.Address,
+        config.Secret));
 
 services.AddSingleton<ATM>();
 

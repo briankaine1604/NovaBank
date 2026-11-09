@@ -4,183 +4,82 @@ using System.Net.Sockets;
 namespace NovaBank.Configuration;
 
 /// <summary>
-/// Starts the peer bank when NovaBank starts, and stops it again on the way out so
-/// the fixed ports are free for the next run. Only a process this class started is
-/// ever killed - if the peer was already up, it is left alone.
+/// Starts the peer bank next to this one, and stops it again on the way out.
+/// Only a process this class started is ever killed.
 /// </summary>
 public sealed class PeerLauncher : IDisposable
 {
     private readonly BankConfig _config;
 
-    private readonly string _configDirectory;
-
     private Process? _started;
 
-    private bool _disposed;
-
-    public PeerLauncher(BankConfig config, string configPath)
+    public PeerLauncher(BankConfig config)
     {
         _config = config;
-        _configDirectory = Path.GetDirectoryName(Path.GetFullPath(configPath))!;
     }
 
     public void Start()
     {
-        if (!_config.Process.Enabled)
+        if (IsListening(_config.PeerAddress))
         {
-            Console.WriteLine($"[{_config.Own.Name}] peer auto-start is off (process.enabled = false).");
+            Console.WriteLine($"[{_config.Name}] {_config.PeerName} is already running.");
 
             return;
         }
 
-        if (IsListening(_config.Peer.Address))
+        string project = _config.ResolvePeerProject();
+
+        if (!File.Exists(project))
         {
             Console.WriteLine(
-                $"[{_config.Own.Name}] {_config.Peer.Name} is already listening at {_config.Peer.Address}; not starting it.");
+                $"[{_config.Name}] no peer project at {project}; start it yourself.");
 
             return;
         }
 
-        string projectPath = ResolveProjectPath();
-
-        if (!File.Exists(projectPath))
+        // dotnet run builds the peer if it is stale, then starts it. The -- separates
+        // dotnet's arguments from ours. UseShellExecute gives it its own console
+        // window, so both ATMs stay usable.
+        _started = Process.Start(new ProcessStartInfo("dotnet",
+            $"run --project \"{project}\" -- " +
+            $"--own {_config.PeerAddress} --peer {_config.Address} --secret {_config.Secret}")
         {
-            Console.WriteLine(
-                $"[{_config.Own.Name}] cannot start {_config.Peer.Name}: no project at {projectPath}. " +
-                "Fix process.projectPath in bank.config.json, or start it yourself.");
-
-            return;
-        }
-
-        // Hand the peer the addresses and secret from this file, so the pair cannot disagree.
-        string arguments =
-            $"run --project \"{projectPath}\" -- " +
-            $"--own {_config.Peer.Address} " +
-            $"--peer {_config.Own.Address} " +
-            $"--secret {_config.Own.InterBankSecret}";
-
-        var startInfo = new ProcessStartInfo("dotnet", arguments)
-        {
-            WorkingDirectory = Path.GetDirectoryName(projectPath)!,
-
-            // Its own console window: two ATMs, two windows, both usable.
+            WorkingDirectory = Path.GetDirectoryName(project)!,
             UseShellExecute = true
-        };
+        });
 
-        try
-        {
-            _started = Process.Start(startInfo);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[{_config.Own.Name}] could not start {_config.Peer.Name}: {ex.Message}");
+        Console.WriteLine($"[{_config.Name}] starting {_config.PeerName} at {_config.PeerAddress} ...");
 
-            return;
+        // dotnet may need a few seconds to build it before the port answers.
+        for (int attempt = 0; attempt < 120 && !IsListening(_config.PeerAddress); attempt++)
+        {
+            Thread.Sleep(250);
         }
 
-        Console.WriteLine($"[{_config.Own.Name}] starting {_config.Peer.Name} at {_config.Peer.Address} ...");
-
-        if (_started is not null && WaitForPeer(_config.Process.StartTimeoutSeconds))
-        {
-            Console.WriteLine($"[{_config.Own.Name}] {_config.Peer.Name} is listening.");
-        }
-        else
-        {
-            Console.WriteLine(
-                $"[{_config.Own.Name}] {_config.Peer.Name} did not answer within " +
-                $"{_config.Process.StartTimeoutSeconds}s; starting anyway, transfers to it will be reversed.");
-        }
+        Console.WriteLine(IsListening(_config.PeerAddress)
+            ? $"[{_config.Name}] {_config.PeerName} is up."
+            : $"[{_config.Name}] {_config.PeerName} is not answering yet.");
     }
 
     public void Dispose()
     {
-        if (_disposed)
+        // dotnet run is the parent process: kill the tree or the bank outlives us.
+        if (_started is { HasExited: false })
         {
-            return;
-        }
-
-        _disposed = true;
-
-        if (_started is null || _started.HasExited)
-        {
-            return;
-        }
-
-        try
-        {
-            // dotnet run is the parent: kill the tree so the app host goes with it.
             _started.Kill(entireProcessTree: true);
-            _started.WaitForExit(5000);
         }
-        catch (Exception)
-        {
-            // Already gone, or not ours to kill - nothing left to clean up.
-        }
-    }
-
-    private string ResolveProjectPath()
-    {
-        string configured = _config.Process.ProjectPath;
-
-        if (Path.IsPathRooted(configured))
-        {
-            return configured;
-        }
-
-        // The config is copied next to the executable as well as living in the repo, so
-        // try the config's own directory, then its parents, then the same from the output
-        // directory - a relative path should work whichever way the app was started.
-        foreach (string start in new[] { _configDirectory, AppContext.BaseDirectory })
-        {
-            for (DirectoryInfo? directory = new(start); directory is not null; directory = directory.Parent)
-            {
-                string candidate = Path.Combine(directory.FullName, configured);
-
-                if (File.Exists(candidate))
-                {
-                    return Path.GetFullPath(candidate);
-                }
-            }
-        }
-
-        return Path.GetFullPath(configured, _configDirectory);
-    }
-
-    private bool WaitForPeer(int seconds)
-    {
-        DateTime deadline = DateTime.UtcNow.AddSeconds(seconds);
-
-        while (DateTime.UtcNow < deadline)
-        {
-            if (IsListening(_config.Peer.Address))
-            {
-                return true;
-            }
-
-            if (_started?.HasExited == true)
-            {
-                return false;
-            }
-
-            Thread.Sleep(250);
-        }
-
-        return false;
     }
 
     private static bool IsListening(string address)
     {
-        if (!Uri.TryCreate(address, UriKind.Absolute, out Uri? uri))
-        {
-            return false;
-        }
+        Uri uri = new(address);
 
         try
         {
             using var client = new TcpClient();
 
-            return client.ConnectAsync(uri.Host, uri.Port)
-                .Wait(TimeSpan.FromMilliseconds(400)) && client.Connected;
+            return client.ConnectAsync(uri.Host, uri.Port).Wait(TimeSpan.FromMilliseconds(400))
+                && client.Connected;
         }
         catch (Exception)
         {

@@ -24,30 +24,27 @@ next run. Admin login is `admin` / `password`.
 `NovaBank.slnx` opens the project on its own in Visual Studio; F5 behaves the
 same as `dotnet run`.
 
-## Configuration — `bank.config.json`
+## Configuration - `bank.config.json`
 
 The only place the pair's addresses and shared secret are written down.
 
-| Key                            | Meaning                                                       |
-| ------------------------------ | ------------------------------------------------------------- |
-| `own.name`                     | This bank's name, used on the peer's statement lines.          |
-| `own.address`                  | Where this bank listens, e.g. `http://localhost:5001/`.        |
-| `own.interBankSecret`          | HMAC key for `/transfers`. Handed to the peer at startup.      |
-| `peer.name`                    | The other bank's name, used on this bank's statement lines.    |
-| `peer.address`                 | Where the peer listens, e.g. `http://localhost:5002/`.         |
-| `process.enabled`              | `false` = do not start the peer; expect it running separately. |
-| `process.projectPath`          | Peer's `.csproj`, absolute or relative to this file.           |
-| `process.startTimeoutSeconds`  | How long to wait for the peer's port after starting it.        |
+| Key                | Meaning                                                       |
+| ------------------ | ------------------------------------------------------------- |
+| `name`             | This bank's name, used on the peer's statement lines.          |
+| `address`          | Where this bank listens, e.g. `http://localhost:5001/`.        |
+| `secret`           | HMAC key for `/transfers`, handed to the peer at startup.      |
+| `peerName`         | The other bank's name, used on this bank's statement lines.    |
+| `peerAddress`      | Where the peer listens, e.g. `http://localhost:5002/`.         |
+| `peerProjectPath`  | The peer's `.csproj`, relative to this repository.             |
 
-Searched in this order, first hit wins: `BANK_CONFIG` environment variable, the
-working directory, then the executable's directory. The path in use is printed
-at startup, so a misread config is visible rather than mysterious.
+The file is copied next to the executable at build time and read from there, so
+it is found however the app is started.
 
-On startup NovaBank loads and validates the file, starts the peer with
-`dotnet run --project <process.projectPath> -- --own <peer.address>
---peer <own.address> --secret <own.interBankSecret>`, waits for the peer's port,
-then serves its own ATM. If the peer is already listening it is left alone — and
-it is only killed on exit when this process started it.
+On startup NovaBank reads the file, starts the peer with
+`dotnet run --project <peerProjectPath> -- --own <peerAddress>
+--peer <address> --secret <secret>`, waits for the peer's port, then serves its
+own ATM. If the peer is already listening it is left alone - and it is only
+killed on exit when this process started it.
 
 Two things are deliberately *not* settings: the account prefix (`000`, baked
 into every number the seeder and `Bank` issue) and the ATM's admin credentials.
