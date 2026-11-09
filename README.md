@@ -1,13 +1,14 @@
 # NovaBank
 
-A console banking application (.NET 10). One of a pair of banks — NovaBank is
-"Bank A" — that each run as their own process and move money between each
-other over HTTP.
+A console banking application (.NET 10). NovaBank is "Bank A", and the entry
+point for the pair: it holds the shared configuration and starts CrestBank,
+"Bank B", alongside itself. The two move money between each other over HTTP.
 
 ## Layers
 
     BLL/                  Customers, accounts, transactions, seeding, transfers
     BLL/Interfaces/       Contracts the business layer exposes
+    Configuration/        bank.config.json model and peer process launcher
     Http/                 Inter-bank transfer server and client, request signing
     Http/Interfaces/      Contracts for the server and client
     Presentation Layer/   ATM console, ATM session, admin console, services, DI wiring
@@ -16,8 +17,44 @@ other over HTTP.
 
     dotnet run
 
-or open `NovaBank.slnx` in Visual Studio and press F5. Admin login is
-`admin` / `password`.
+That starts NovaBank **and** CrestBank, in two console windows. Quitting the
+NovaBank ATM (option 4) shuts CrestBank down too, so both ports are free for the
+next run. Admin login is `admin` / `password`.
+
+`NovaBank.slnx` opens the project on its own in Visual Studio; F5 behaves the
+same as `dotnet run`.
+
+## Configuration — `bank.config.json`
+
+The only place the pair's addresses and shared secret are written down.
+
+| Key                            | Meaning                                                       |
+| ------------------------------ | ------------------------------------------------------------- |
+| `own.name`                     | This bank's name, used on the peer's statement lines.          |
+| `own.address`                  | Where this bank listens, e.g. `http://localhost:5001/`.        |
+| `own.interBankSecret`          | HMAC key for `/transfers`. Handed to the peer at startup.      |
+| `peer.name`                    | The other bank's name, used on this bank's statement lines.    |
+| `peer.address`                 | Where the peer listens, e.g. `http://localhost:5002/`.         |
+| `process.enabled`              | `false` = do not start the peer; expect it running separately. |
+| `process.projectPath`          | Peer's `.csproj`, absolute or relative to this file.           |
+| `process.startTimeoutSeconds`  | How long to wait for the peer's port after starting it.        |
+
+Searched in this order, first hit wins: `BANK_CONFIG` environment variable, the
+working directory, then the executable's directory. The path in use is printed
+at startup, so a misread config is visible rather than mysterious.
+
+On startup NovaBank loads and validates the file, starts the peer with
+`dotnet run --project <process.projectPath> -- --own <peer.address>
+--peer <own.address> --secret <own.interBankSecret>`, waits for the peer's port,
+then serves its own ATM. If the peer is already listening it is left alone — and
+it is only killed on exit when this process started it.
+
+Two things are deliberately *not* settings: the account prefix (`000`, baked
+into every number the seeder and `Bank` issue) and the ATM's admin credentials.
+
+Killing the NovaBank window instead of choosing Exit can leave CrestBank
+running; it holds port 5002 and the next start will report the port is taken.
+Stop it with `taskkill /F /IM CrestBank.exe`.
 
 ## Inter-bank contract
 
@@ -30,9 +67,9 @@ repository. Both processes must be running for a cross-bank transfer to work.
 | Account prefix     | `000`           | `303`            |
 | Shared secret      | `nova-crest-demo-secret` | same    |
 
-These values are set in `Presentation Layer/Program.cs`. Changing a port, the
-account prefix, the peer address, or the shared secret means changing it in the
-peer repository too — there is no shared package holding them.
+CrestBank keeps these same values as defaults, so it still runs on its own from
+its own repository — but when NovaBank starts it, `bank.config.json` here wins:
+NovaBank passes the peer its address, this bank's address, and the secret.
 
 Requests to `/transfers` are signed with the shared secret and a timestamp;
 unsigned, stale, or wrongly signed requests are rejected by both sides.

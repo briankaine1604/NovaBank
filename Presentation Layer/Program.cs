@@ -1,15 +1,23 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NovaBank;
+using NovaBank.Configuration;
 using NovaBank.Http;
 
-Console.Title = "NovaBank ATM  (Bank A)";
+// NovaBank is Bank A and the entry point of the pair. bank.config.json holds every
+// address and the shared secret, and names the project to start alongside this one.
+BankConfig config = BankConfig.Load(out string configPath);
 
-// Shared secret for the inter-bank channel; both banks must hold the same value.
-// A real deployment keeps one key per peer in configuration, never in source.
-const string InterBankSecret = "nova-crest-demo-secret";
+Console.Title = $"{config.Own.Name} ATM  (Bank A)";
 
-const string PeerBankAddress = "http://localhost:5002/";
-const string OwnAddress = "http://localhost:5001/";
+Console.WriteLine($"[{config.Own.Name}] config: {configPath}");
+
+var peerLauncher = new PeerLauncher(config, configPath);
+
+peerLauncher.Start();
+
+// The peer shares a fixed port with nothing else, so it must not outlive us.
+AppDomain.CurrentDomain.ProcessExit += (_, _) => peerLauncher.Dispose();
+Console.CancelKeyPress += (_, _) => peerLauncher.Dispose();
 
 var services = new ServiceCollection();
 
@@ -43,12 +51,12 @@ services.AddSingleton<AirtimeService>();
 services.AddSingleton<AdminService>();
 
 services.AddSingleton<IBankHttpClient>(
-    _ => new BankHttpClient(PeerBankAddress, InterBankSecret));
+    _ => new BankHttpClient(config.Peer.Address, config.Own.InterBankSecret));
 
 // Which account numbers this bank owns. Everything else is routed to the peer over HTTP.
+// Not in the config: the prefix is baked into every account number this bank issues
+// (the seeder and Bank's ten-digit generator), so changing it is a data change, not a setting.
 const string OwnAccountPrefix = "000";
-const string BankName = "NovaBank";
-const string PeerBankName = "CrestBank";
 
 services.AddSingleton(_ => new LocalAccountNumbers(OwnAccountPrefix));
 
@@ -64,23 +72,26 @@ services.AddSingleton<ITransferRoute>(provider => new InterBankTransferRoute(
     provider.GetRequiredService<LocalAccountNumbers>(),
     provider.GetRequiredService<ITransferScreen>(),
     provider.GetRequiredService<ICommonOutcomes>(),
-    BankName,
-    PeerBankName));
+    config.Own.Name,
+    config.Peer.Name));
 
 services.AddSingleton<IBankHttpServer>(
     provider => new BankHttpServer(
         provider.GetRequiredService<Bank>(),
         provider.GetRequiredService<IServerConsole>(),
-        OwnAddress,
-        InterBankSecret));
+        config.Own.Address,
+        config.Own.InterBankSecret));
 
 services.AddSingleton<ATM>();
 
 await using ServiceProvider provider = services.BuildServiceProvider();
 
-// Talks to CrestBank, and listens for CrestBank talking to us.
+// Talks to the peer, and listens for the peer talking to us.
 _ = provider.GetRequiredService<IBankHttpServer>().Start();
 
 ATM atm = provider.GetRequiredService<ATM>();
 
 atm.Run();
+
+// Reached when the user picks Exit: take the peer down with us and free both ports.
+peerLauncher.Dispose();

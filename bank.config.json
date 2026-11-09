@@ -1,0 +1,16 @@
+{
+  "own": {
+    "name": "NovaBank",
+    "address": "http://localhost:5001/",
+    "interBankSecret": "nova-crest-demo-secret"
+  },
+  "peer": {
+    "name": "CrestBank",
+    "address": "http://localhost:5002/"
+  },
+  "process": {
+    "enabled": true,
+    "projectPath": "..\\CrestBank\\CrestBank.csproj",
+    "startTimeoutSeconds": 30
+  }
+}
